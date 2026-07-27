@@ -92,7 +92,7 @@
 
   <!-- Calendar -->
   <div class="bg-white rounded-2xl shadow-sm border border-[#EAE6DC] p-5 sm:p-6">
-    <h2 class="text-base font-bold text-[#1E3A34] mb-4">This week</h2>
+    <h2 id="calendar-title" class="text-base font-bold text-[#1E3A34] mb-4">This week</h2>
     <div id="calendar" class="space-y-3"></div>
     <p class="text-xs text-[#B4B0A6] mt-4">Only the last 7 days are kept — older entries are cleared automatically.</p>
   </div>
@@ -100,12 +100,6 @@
 
 <script>
 const KIDS = ["Nick", "Judy", "Mary", "Ruby"];
-const KID_COLORS = {
-  Nick: { bg: "#DDEBFF", text: "#1D4ED8" },
-  Judy: { bg: "#FFE4EC", text: "#BE185D" },
-  Mary: { bg: "#E4F7E9", text: "#15803D" },
-  Ruby: { bg: "#FFF1D6", text: "#B45309" },
-};
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function showFatalError(msg) {
@@ -210,6 +204,10 @@ function renderSportChips() {
 }
 
 function renderCalendar() {
+  const kid = document.getElementById("kid-select").value;
+  document.getElementById("calendar-title").textContent = `${kid} — This week`;
+  const kidEntries = entries.filter((e) => e.kid === kid);
+
   const weekStart = startOfWeek(new Date());
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const todayIndex = Math.floor((Date.now() - weekStart.getTime()) / DAY_MS);
@@ -219,7 +217,7 @@ function renderCalendar() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart); d.setDate(d.getDate() + i);
     const start = d.getTime(); const end = start + DAY_MS;
-    const dayEntries = entries.filter((e) => {
+    const dayEntries = kidEntries.filter((e) => {
       const t = new Date(e.created_at).getTime();
       return t >= start && t < end;
     });
@@ -240,11 +238,9 @@ function renderCalendar() {
       html += `<p class="text-sm text-[#B4B0A6]">No practice logged</p>`;
     } else {
       html += `<div class="space-y-2">` + dayEntries.map((e) => {
-        const c = KID_COLORS[e.kid] || { bg: "#EEE", text: "#555" };
         return `<div class="flex items-start justify-between gap-2 bg-white rounded-lg px-3 py-2 border border-[#EAE6DC]">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background-color:${c.bg};color:${c.text}">${e.kid}</span>
               <span class="text-sm font-medium">${e.sport}</span>
               <span class="text-sm text-[#8A8680]">· ${fmtDuration(e.duration_seconds)}</span>
             </div>
@@ -370,7 +366,10 @@ document.getElementById("new-sport-input").addEventListener("keydown", (e) => { 
 document.getElementById("toggle-sport-manager").addEventListener("click", () => {
   document.getElementById("sport-manager").classList.toggle("hidden");
 });
-document.getElementById("kid-select").addEventListener("change", updateClock);
+document.getElementById("kid-select").addEventListener("change", () => {
+  updateClock();
+  renderCalendar();
+});
 document.getElementById("sport-select").addEventListener("change", updateClock);
 
 // ---------- init ----------

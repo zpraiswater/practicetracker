@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>Practice Log</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231E3A34'/%3E%3Ctext x='50' y='65' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E%E2%8F%B1%3C/text%3E%3C/svg%3E" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body { -webkit-tap-highlight-color: transparent; }
+  @font-face { font-display: swap; }
+</style>
+</head>
+<body class="min-h-screen bg-[#F7F5F0] text-[#2A2823]">
+
+<!-- ============ FILL THESE IN ============ -->
+<script>
+  const SUPABASE_URL = https://oabatouqgqkrnziphxfg.supabase.co;
+  const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hYmF0b3VxZ3Frcm56aXBoeGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNTU2ODIsImV4cCI6MjEwMDczMTY4Mn0.Fd9Xv0ZmKdmoj9nUSxYRSzdLVgXYk9LDmrL6rhF5pjo;
+</script>
+<!-- ======================================= -->
+
+<div id="setup-warning" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl p-6 max-w-sm">
+    <h2 class="font-bold text-lg mb-2">Almost there</h2>
+    <p class="text-sm text-stone-600">Open <code>index.html</code> and replace <code>YOUR_SUPABASE_PROJECT_URL</code> and <code>YOUR_SUPABASE_ANON_KEY</code> near the top with your Supabase project's values (Project Settings &gt; API).</p>
+  </div>
+</div>
+
+<div class="max-w-3xl mx-auto px-4 py-6 sm:py-10">
+  <header class="mb-6 sm:mb-8">
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#1E3A34]">Practice Log</h1>
+    <p class="text-sm text-[#6B6862] mt-1">This week's practice, timed and tracked.</p>
+  </header>
+
+  <!-- Timer Card -->
+  <div class="bg-white rounded-2xl shadow-sm border border-[#EAE6DC] p-5 sm:p-6 mb-6">
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-[#8A8680] mb-1.5">Who</label>
+        <select id="kid-select" class="w-full rounded-lg border border-[#D8D3C7] bg-[#FBFAF7] px-3 py-2.5 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]">
+          <option>Nick</option><option>Judy</option><option>Mary</option><option>Ruby</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-[#8A8680] mb-1.5">Sport</label>
+        <select id="sport-select" class="w-full rounded-lg border border-[#D8D3C7] bg-[#FBFAF7] px-3 py-2.5 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]"></select>
+      </div>
+    </div>
+
+    <button id="toggle-sport-manager" class="text-xs font-medium text-[#2F6F5E] hover:underline mb-4">Manage sports</button>
+
+    <div id="sport-manager" class="hidden mb-5 bg-[#FBFAF7] border border-[#EAE6DC] rounded-xl p-3">
+      <div id="sport-chips" class="flex flex-wrap gap-2 mb-3"></div>
+      <div class="flex gap-2">
+        <input id="new-sport-input" placeholder="Add a sport…" class="flex-1 rounded-lg border border-[#D8D3C7] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]" />
+        <button id="add-sport-btn" class="flex items-center gap-1 bg-[#1E3A34] text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-[#16302B]">+ Add</button>
+      </div>
+    </div>
+
+    <div class="flex flex-col items-center py-6">
+      <div id="clock" class="font-mono font-bold tabular-nums text-[#1E3A34] tracking-tight" style="font-size: clamp(2.75rem, 12vw, 4.5rem);">00:00</div>
+      <div id="clock-sub" class="text-sm text-[#8A8680] mt-1"></div>
+    </div>
+
+    <div class="flex gap-3 justify-center">
+      <button id="start-pause-btn" class="flex items-center gap-2 bg-[#2F6F5E] text-white rounded-xl px-6 py-3 font-semibold hover:bg-[#265A4C] active:scale-[0.98] transition">
+        <span id="start-pause-icon">▶</span><span id="start-pause-label">Start</span>
+      </button>
+      <button id="finish-btn" disabled class="flex items-center gap-2 bg-[#1E3A34] text-white rounded-xl px-6 py-3 font-semibold hover:bg-[#16302B] active:scale-[0.98] transition disabled:opacity-40 disabled:pointer-events-none">
+        ■ Finish
+      </button>
+    </div>
+
+    <p id="save-error" class="hidden text-center text-sm text-red-600 mt-3"></p>
+  </div>
+
+  <!-- Finish modal -->
+  <div id="finish-modal" class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-5 sm:p-6">
+      <h2 class="text-lg font-bold text-[#1E3A34] mb-1">Finish workout</h2>
+      <p id="finish-summary" class="text-sm text-[#6B6862] mb-4"></p>
+      <label class="block text-xs font-semibold uppercase tracking-wide text-[#8A8680] mb-1.5">Notes (optional)</label>
+      <textarea id="notes-input" rows="3" placeholder="What did they work on?" class="w-full rounded-lg border border-[#D8D3C7] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F6F5E] mb-4"></textarea>
+      <div class="flex gap-2">
+        <button id="discard-btn" class="flex-1 rounded-xl px-4 py-2.5 font-medium text-[#8A8680] border border-[#D8D3C7] hover:bg-[#F7F5F0]">Discard</button>
+        <button id="save-btn" class="flex-1 rounded-xl px-4 py-2.5 font-semibold bg-[#2F6F5E] text-white hover:bg-[#265A4C]">Save workout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="bg-white rounded-2xl shadow-sm border border-[#EAE6DC] p-5 sm:p-6">
+    <h2 class="text-base font-bold text-[#1E3A34] mb-4">This week</h2>
+    <div id="calendar" class="space-y-3"></div>
+    <p class="text-xs text-[#B4B0A6] mt-4">Only the last 7 days are kept — older entries are cleared automatically.</p>
+  </div>
+</div>
+
+<script>
+const KIDS = ["Nick", "Judy", "Mary", "Ruby"];
+const KID_COLORS = {
+  Nick: { bg: "#DDEBFF", text: "#1D4ED8" },
+  Judy: { bg: "#FFE4EC", text: "#BE185D" },
+  Mary: { bg: "#E4F7E9", text: "#15803D" },
+  Ruby: { bg: "#FFF1D6", text: "#B45309" },
+};
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+if (SUPABASE_URL.startsWith("YOUR_") || SUPABASE_ANON_KEY.startsWith("YOUR_")) {
+  document.getElementById("setup-warning").classList.remove("hidden");
+}
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let sports = [];
+let entries = [];
+let running = false;
+let elapsedSeconds = 0;
+let timerHandle = null;
+
+function fmtClock(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = Math.floor(totalSeconds % 60);
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+function fmtDuration(totalSeconds) {
+  const m = Math.round(totalSeconds / 60);
+  if (m < 1) return "<1 min";
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem ? `${h}h ${rem}m` : `${h}h`;
+}
+function startOfWeek(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - day);
+  return date;
+}
+function showError(msg) {
+  const el = document.getElementById("save-error");
+  if (!msg) { el.classList.add("hidden"); return; }
+  el.textContent = msg;
+  el.classList.remove("hidden");
+}
+
+// ---------- data loading ----------
+async function loadSports() {
+  const { data, error } = await sb.from("sports").select("*").order("created_at", { ascending: true });
+  if (error) { showError("Couldn't load sports."); return; }
+  sports = data.map((r) => r.name);
+  renderSportOptions();
+  renderSportChips();
+}
+
+async function loadWorkouts() {
+  const cutoffISO = new Date(Date.now() - 7 * DAY_MS).toISOString();
+  // clear anything older than a week
+  await sb.from("workouts").delete().lt("created_at", cutoffISO);
+  const { data, error } = await sb.from("workouts").select("*").gte("created_at", cutoffISO).order("created_at", { ascending: true });
+  if (error) { showError("Couldn't load workouts."); return; }
+  entries = data;
+  renderCalendar();
+}
+
+// live sync: reload when any device inserts/deletes a workout
+sb.channel("workouts-changes")
+  .on("postgres_changes", { event: "*", schema: "public", table: "workouts" }, () => loadWorkouts())
+  .subscribe();
+
+// ---------- rendering ----------
+function renderSportOptions() {
+  const sel = document.getElementById("sport-select");
+  const current = sel.value;
+  sel.innerHTML = sports.map((s) => `<option ${s === current ? "selected" : ""}>${s}</option>`).join("");
+}
+
+function renderSportChips() {
+  const el = document.getElementById("sport-chips");
+  el.innerHTML = sports.map((s) => `
+    <span class="inline-flex items-center gap-1 bg-white border border-[#D8D3C7] rounded-full pl-3 pr-1.5 py-1 text-sm">
+      ${s}
+      <button data-sport="${s}" class="delete-sport-btn p-0.5 rounded-full hover:bg-[#F0EDE5] ${sports.length <= 1 ? "opacity-30 pointer-events-none" : ""}">✕</button>
+    </span>
+  `).join("");
+  el.querySelectorAll(".delete-sport-btn").forEach((btn) => {
+    btn.addEventListener("click", () => deleteSport(btn.dataset.sport));
+  });
+}
+
+function renderCalendar() {
+  const weekStart = startOfWeek(new Date());
+  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const todayIndex = Math.floor((Date.now() - weekStart.getTime()) / DAY_MS);
+  const cal = document.getElementById("calendar");
+  cal.innerHTML = "";
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i);
+    const start = d.getTime(); const end = start + DAY_MS;
+    const dayEntries = entries.filter((e) => {
+      const t = new Date(e.created_at).getTime();
+      return t >= start && t < end;
+    });
+    const isToday = i === todayIndex;
+
+    const dayDiv = document.createElement("div");
+    dayDiv.className = `rounded-xl border p-3 ${isToday ? "border-[#2F6F5E] bg-[#F1F7F4]" : "border-[#EAE6DC] bg-[#FBFAF7]"}`;
+
+    const total = dayEntries.reduce((sum, e) => sum + e.duration_seconds, 0);
+    let html = `<div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-bold uppercase tracking-wide ${isToday ? "text-[#2F6F5E]" : "text-[#8A8680]"}">
+        ${dayLabels[i]} ${d.getMonth() + 1}/${d.getDate()}${isToday ? " · Today" : ""}
+      </span>
+      ${dayEntries.length ? `<span class="text-xs text-[#8A8680]">${fmtDuration(total)} total</span>` : ""}
+    </div>`;
+
+    if (dayEntries.length === 0) {
+      html += `<p class="text-sm text-[#B4B0A6]">No practice logged</p>`;
+    } else {
+      html += `<div class="space-y-2">` + dayEntries.map((e) => {
+        const c = KID_COLORS[e.kid] || { bg: "#EEE", text: "#555" };
+        return `<div class="flex items-start justify-between gap-2 bg-white rounded-lg px-3 py-2 border border-[#EAE6DC]">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background-color:${c.bg};color:${c.text}">${e.kid}</span>
+              <span class="text-sm font-medium">${e.sport}</span>
+              <span class="text-sm text-[#8A8680]">· ${fmtDuration(e.duration_seconds)}</span>
+            </div>
+            ${e.notes ? `<p class="text-sm text-[#6B6862] mt-1 break-words">${escapeHtml(e.notes)}</p>` : ""}
+          </div>
+          <button data-id="${e.id}" class="delete-entry-btn p-1 text-[#B4B0A6] hover:text-red-500 shrink-0">🗑</button>
+        </div>`;
+      }).join("") + `</div>`;
+    }
+    dayDiv.innerHTML = html;
+    cal.appendChild(dayDiv);
+  }
+
+  cal.querySelectorAll(".delete-entry-btn").forEach((btn) => {
+    btn.addEventListener("click", () => deleteEntry(btn.dataset.id));
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---------- actions ----------
+async function addSport() {
+  const input = document.getElementById("new-sport-input");
+  const name = input.value.trim();
+  if (!name || sports.includes(name)) return;
+  const { error } = await sb.from("sports").insert({ name });
+  if (error) { showError("Couldn't add sport."); return; }
+  input.value = "";
+  await loadSports();
+}
+
+async function deleteSport(name) {
+  if (sports.length <= 1) return;
+  const { error } = await sb.from("sports").delete().eq("name", name);
+  if (error) { showError("Couldn't delete sport."); return; }
+  await loadSports();
+}
+
+async function deleteEntry(id) {
+  const { error } = await sb.from("workouts").delete().eq("id", id);
+  if (error) { showError("Couldn't delete entry."); return; }
+  await loadWorkouts();
+}
+
+function updateClock() {
+  document.getElementById("clock").textContent = fmtClock(elapsedSeconds);
+  document.getElementById("clock-sub").textContent =
+    `${document.getElementById("kid-select").value} · ${document.getElementById("sport-select").value}`;
+}
+
+function startTimer() {
+  running = true;
+  document.getElementById("start-pause-icon").textContent = "⏸";
+  document.getElementById("start-pause-label").textContent = "Pause";
+  document.getElementById("kid-select").disabled = true;
+  document.getElementById("sport-select").disabled = true;
+  timerHandle = setInterval(() => {
+    elapsedSeconds += 1;
+    updateClock();
+  }, 1000);
+}
+
+function pauseTimer() {
+  running = false;
+  clearInterval(timerHandle);
+  document.getElementById("start-pause-icon").textContent = "▶";
+  document.getElementById("start-pause-label").textContent = "Resume";
+}
+
+function openFinishModal() {
+  if (running) pauseTimer();
+  const kid = document.getElementById("kid-select").value;
+  const sport = document.getElementById("sport-select").value;
+  document.getElementById("finish-summary").textContent = `${kid} · ${sport} · ${fmtDuration(elapsedSeconds)}`;
+  document.getElementById("notes-input").value = "";
+  document.getElementById("finish-modal").classList.remove("hidden");
+}
+
+async function saveWorkout() {
+  const kid = document.getElementById("kid-select").value;
+  const sport = document.getElementById("sport-select").value;
+  const notes = document.getElementById("notes-input").value.trim();
+  const { error } = await sb.from("workouts").insert({
+    kid, sport, duration_seconds: elapsedSeconds, notes,
+  });
+  if (error) { showError("Couldn't save workout."); return; }
+  resetTimer();
+  document.getElementById("finish-modal").classList.add("hidden");
+  await loadWorkouts();
+}
+
+function discardWorkout() {
+  resetTimer();
+  document.getElementById("finish-modal").classList.add("hidden");
+}
+
+function resetTimer() {
+  elapsedSeconds = 0;
+  running = false;
+  clearInterval(timerHandle);
+  document.getElementById("start-pause-icon").textContent = "▶";
+  document.getElementById("start-pause-label").textContent = "Start";
+  document.getElementById("finish-btn").disabled = true;
+  document.getElementById("kid-select").disabled = false;
+  document.getElementById("sport-select").disabled = false;
+  updateClock();
+}
+
+// ---------- wire up events ----------
+document.getElementById("start-pause-btn").addEventListener("click", () => {
+  if (running) pauseTimer(); else startTimer();
+  document.getElementById("finish-btn").disabled = false;
+});
+document.getElementById("finish-btn").addEventListener("click", openFinishModal);
+document.getElementById("save-btn").addEventListener("click", saveWorkout);
+document.getElementById("discard-btn").addEventListener("click", discardWorkout);
+document.getElementById("add-sport-btn").addEventListener("click", addSport);
+document.getElementById("new-sport-input").addEventListener("keydown", (e) => { if (e.key === "Enter") addSport(); });
+document.getElementById("toggle-sport-manager").addEventListener("click", () => {
+  document.getElementById("sport-manager").classList.toggle("hidden");
+});
+document.getElementById("kid-select").addEventListener("change", updateClock);
+document.getElementById("sport-select").addEventListener("change", updateClock);
+
+// ---------- init ----------
+(async function init() {
+  await loadSports();
+  await loadWorkouts();
+  updateClock();
+})();
+</script>
+</body>
+</html>

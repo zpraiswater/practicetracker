@@ -16,8 +16,8 @@
 
 <!-- ============ FILL THESE IN ============ -->
 <script>
-  const SUPABASE_URL = https://oabatouqgqkrnziphxfg.supabase.co;
-  const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hYmF0b3VxZ3Frcm56aXBoeGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNTU2ODIsImV4cCI6MjEwMDczMTY4Mn0.Fd9Xv0ZmKdmoj9nUSxYRSzdLVgXYk9LDmrL6rhF5pjo;
+  const SUPABASE_URL = "https://oabatouqgqkrnziphxfg.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hYmF0b3VxZ3Frcm56aXBoeGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNTU2ODIsImV4cCI6MjEwMDczMTY4Mn0.Fd9Xv0ZmKdmoj9nUSxYRSzdLVgXYk9LDmrL6rhF5pjo";
 </script>
 <!-- ======================================= -->
 
@@ -108,11 +108,27 @@ const KID_COLORS = {
 };
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function showFatalError(msg) {
+  const banner = document.createElement("div");
+  banner.className = "fixed top-0 inset-x-0 bg-red-600 text-white text-sm font-medium p-3 z-[9999]";
+  banner.textContent = msg;
+  document.body.prepend(banner);
+}
+
 if (SUPABASE_URL.startsWith("YOUR_") || SUPABASE_ANON_KEY.startsWith("YOUR_")) {
   document.getElementById("setup-warning").classList.remove("hidden");
 }
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let sb;
+try {
+  if (typeof window.supabase === "undefined") {
+    throw new Error("Supabase library failed to load from the CDN (window.supabase is undefined).");
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (err) {
+  showFatalError(`Setup error: ${err.message}`);
+  throw err;
+}
 
 let sports = [];
 let entries = [];
